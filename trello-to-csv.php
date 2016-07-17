@@ -35,6 +35,16 @@ $client->authenticate(
 );
 
 // print_r($fileInfo);
+function replace_between($str, $needle_start, $needle_end, $replacement) {
+    $pos = strpos($str, $needle_start);
+    $start = $pos === false ? 0 : $pos + strlen($needle_start);
+
+    $pos = strpos($str, $needle_end, $start);
+    $end = $pos === false ? strlen($str) : $pos;
+
+    return substr_replace($str, $replacement, $start, $end - $start);
+}
+
 
 try {
   $t = new TrelloBoardToCsv($TRELLO_JSON_URL, $list_title);
@@ -49,7 +59,12 @@ $fileExists = $client->api('repo')->contents()->exists($REPO_USER, $REPO_NAME, $
 if ($fileExists)
 {
 	$oldFile = $client->api('repo')->contents()->show($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $branch);
+
+	$oldfile_txt = (base64_decode($oldFile['content']));
+
+$TRELLO_MARKDOWN_CONTENT = replace_between($oldfile_txt, '<trello>', '</trello>', "\n" . $TRELLO_MARKDOWN_CONTENT . "\n");
+
 	$fileInfo = $client->api('repo')->contents()->update($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $TRELLO_MARKDOWN_CONTENT, $COMMIT_MSG, $oldFile['sha'], $REPO_BRANCH, $committer);
 }else{
-	$fileInfo = $client->api('repo')->contents()->create($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $TRELLO_MARKDOWN_CONTENT, $COMMIT_MSG, $REPO_BRANCH, $committer);
+	$fileInfo = $client->api('repo')->contents()->create($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, '<trello>' . $TRELLO_MARKDOWN_CONTENT . '</trello>', $COMMIT_MSG, $REPO_BRANCH, $committer);
 }
