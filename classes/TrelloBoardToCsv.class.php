@@ -4,33 +4,48 @@
  */
 
 class TrelloBoardToCsv {
-  public $filename = '';
+  public $url = '';
   public $json = '';
   public $csv = '';
   public $list = '';
+  private $curl;
 
   /**
    * Constructor
    * Checks that the input file exists and kicks off the sequence.
    */
-  function __construct($filename, $list = '') {
-    if (file_exists($filename)) {
-      $this->list = $list;
-      $this->filename = $filename;
+  function __construct($url, $list = '') {
+    $this->curl = curl_init();     
+    curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, true); 
+    curl_setopt($this->curl, CURLOPT_SSL_VERIFYHOST, false); 
+    curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, false);   
+
+    $this->url = $url;
+    $this->list = $list;
+  }
+  
+
+  function getMarkdown()
+  {
+    if (isset($this->url)) {  
       $this->file_to_json();
       $this->json_to_csv();
-      $this->save_csv();
+      return $this->get_markdown();
     }
     else {
       throw new Exception('File does not exist.');
     }
   }
-  
+
   /**
    * Read in the file and decodes the json.
    */
   function file_to_json() {
-    $file = file_get_contents($this->filename);
+    $file = $this->http_get($this->url);
+      // print_r (curl_error($this->curl));
+
+    // echo "wew $file";
     if ($file === FALSE) {
       throw new Exception('Could not read file.');
     }
@@ -46,7 +61,9 @@ class TrelloBoardToCsv {
    */
   function json_to_csv() {
     $output = '';
-    $output .= '"' . $this->json->name . '"' . "\n";
+
+    //card name output
+    $output .= '# ' . $this->json->name . '' . "\n";
     
     foreach ($this->json->lists as $i => $list) {
       $print_list = FALSE;
@@ -58,6 +75,7 @@ class TrelloBoardToCsv {
        * that string.
        */
       if ($list->closed == FALSE) {
+
         $print_list = TRUE;
         
         if ($this->list != '') {
@@ -65,16 +83,20 @@ class TrelloBoardToCsv {
             $print_list = FALSE;
           }
         }
+
       }
 
       if ($print_list) {
-        $output .= "\n" . '"' . $list->name . '"' . "\n";
+
+        $output .= "\n" . '**' . $list->name . '**' . "\n";
 
         foreach ($this->json->cards as $j => $card) {
           if ($card->closed == FALSE && $card->idList == $list->id) {
-            $output .= '"' . $card->name . '"' . "\n";
+            $output .= '* ' . $card->name . '' . "\n";
           }
         } // end card foreach
+
+
       }
     } // end list foreach
 
@@ -85,10 +107,28 @@ class TrelloBoardToCsv {
    * Creates the CSV file
    */
   function save_csv() {
-    $result = file_put_contents($this->filename . '.csv', $this->csv);
+    $result = file_put_contents($this->url . '.csv', $this->csv);
     if ($result === FALSE) {
       throw new Exception('Could not write the file.');
     }
+  }
+
+  function get_markdown()
+  {
+    return $this->csv;
+  }
+
+  private function http_get($url) {
+    curl_setopt($this->curl, CURLOPT_HTTPGET, TRUE);
+    return $this->_request($url);
+  }
+
+  private function _request($url) {
+    curl_setopt($this->curl, CURLOPT_URL, $url);
+    // curl_setopt($this->curl, CURLINFO_HEADER_OUT, true);
+    curl_setopt($this->curl, CURLOPT_USERAGENT, 'My GitHub App');
+    // curl_setopt($this->curl, CURLOPT_HTTPHEADER, array('Accept: application/vnd.github-blob.raw'));
+    return curl_exec($this->curl);
   }
 
 }
