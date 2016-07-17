@@ -1,0 +1,12 @@
+{
+    "name": "xcorex/trello-to-csv",
+    "authors": [
+        {
+            "name": "Budi Prakosa a.k.a Iyok",
+            "email": "iyok@deadmediafm.org"
+        }
+    ],
+    "require": {
+	        "knplabs/github-api": "~1.4"
+		}
+}
