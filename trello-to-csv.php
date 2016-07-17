@@ -45,7 +45,11 @@ catch (Exception $e) {
   print 'Exception thrown: ' . $e->getMessage();
 }
 
-$oldFile = $client->api('repo')->contents()->show($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $branch);
-
-$fileInfo = $client->api('repo')->contents()->update($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $TRELLO_MARKDOWN_CONTENT, $COMMIT_MSG, $oldFile['sha'], $REPO_BRANCH, $committer);
-
+$fileExists = $client->api('repo')->contents()->exists($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $reference);
+if ($fileExists)
+{
+	$oldFile = $client->api('repo')->contents()->show($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $branch);
+	$fileInfo = $client->api('repo')->contents()->update($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $TRELLO_MARKDOWN_CONTENT, $COMMIT_MSG, $oldFile['sha'], $REPO_BRANCH, $committer);
+}else{
+	$fileInfo = $client->api('repo')->contents()->create($REPO_USER, $REPO_NAME, $TRELLO_FILENAME, $TRELLO_MARKDOWN_CONTENT, $COMMIT_MSG, $REPO_BRANCH, $committer);
+}
